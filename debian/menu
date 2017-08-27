@@ -1,0 +1,2 @@
+?package(bcalm):needs="text" section="Applications/Science/Biology"\
+  title="bcalm" command="/usr/bin/bcalm"

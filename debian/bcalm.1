@@ -1,0 +1,124 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" (C) Copyright 2017 Pierre Vignet <pierre.vignet.contact@caramail.fr>,
+.\"
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH BCALM 1 "July 20, 2017"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+bcalm \- BCALM 2 is a bioinformatics tool for constructing the compacted de Bruijn graph from sequencing data.
+
+.SH DESCRIPTION
+.BI "Input formats"
+.TP
+File input format can be fasta, fastq, either gzipped or not. BCALM 2 does not care about paired\-end information, all given reads contribute to k\-mers in the graph (as long as such k\-mers pass the abundance threshold).
+.PP
+.TP
+To pass several files as input:
+
+ls \-1 *.fastq > list_reads
+.br
+bcalm \-in list_reads [..]
+.PP
+
+.BI "Output"
+.TP
+BCALM 2 outputs the set of unitigs of the de Bruijn graph. A unitig is the sequence of a 
+non\-branching path. 
+Unitigs that are connected by an edge in the graph overlap by exactly (k\-1) nucleotides. 
+We have two output formats: FASTA and GFA.
+.TP
+GFA output: use scripts/convertToGFA.py to convert the output of BCALM 2 to GFA (contributed by Mayank Pahadia).
+.PP
+.TP
+FASTA output header:
+
+><id> LN:i:<length> KC:i:<abundance> KM:f:<abundance> L:<+/\->:<other id>:<+/\-> [..]
+
+Where:
+
+    LN field is the length of the unitig
+
+    KC and KM fields are for total abundance and mean abundance of kmers inside the unitig, respectively.
+
+    Edges between unitigs are reported as L:x:y:z entries in the FASTA header (1 entry per edge). 
+    A classic forward\-forward outcoming edge is labeled L:+:[next node]:+. A forward\-reverse, L:+:[next node]:\-. 
+    Incoming edges are encoded as outcoming edges of the reverse\-complement node. 
+    E.g. L:\-:[previous node]:+ means that if you reverse\-complemented the current node, 
+    then there would be an edge from the last k\-mer of current node to the first k\-mer 
+    of the forward strand of [previous node].
+.PP
+
+.BI "Reverse-complements"
+.TP
+BCALM 2 converts all k\-mers into their canonical representation with respect to reverse\-complements. 
+In other words, a k\-mer and its reverse complement are considered to be the same object, 
+appearing only once in the output, either in forward or reverse orientation.
+.PP
+.TP
+Note: in the output of BCALM 2, each unitig may be either be returned in forward or reverse orientation, with no guarantee that the orientation will stay the same across identical runs of the software.
+.PP
+
+.BI "Larger k values"
+.TP
+BCALM 2 supports arbitrary large k\-mer lengths. You need to recompile it from sources. 
+For k up to, say, 320, type this in the build folder:
+.PP
+.TP
+rm \-Rf CMake* && cmake \-DKSIZE_LIST="32 64 96 128 160 192 224 256 320" .. && make \-j 8
+.PP
+.TP
+For compilation, list of k\-mers should only contain multiples of 32. 
+Intermediate values create optimized code for smaller $k$'s. You could specify just 
+KSIZE_LIST="320" but then using smaller k values would be as slow as large ones.
+.PP
+.TP
+Of course, after that, BCALM 2 can be run with any k value up to the largest one specified during compilation.
+.PP
+
+.SH OPTIONS
+Importants parameters are:
+.TP
+.BI "\-kmer\-size [int]"
+The k-mer size, i.e. length of the nodes of the de Bruijn graph.
+.TP
+.BI "\-abundance\-min [int]"
+Sets a threshold X below which k\-mers that are seen (strictly) less than X times in 
+the dataset are filtered out; i.e. sequencing errors, typically.
+.PP
+
+.SH EXAMPLES
+
+.PP
+.RS
+bcalm \-in [reads.fa] \-kmer\-size [kmer_size] \-abundance\-min [abundance_threshold]
+.RE
+.PP
+e.g.
+.PP
+.RS
+bcalm \-in reads.fastq \-kmer\-size 21 \-abundance\-min 2
+.RE
+.PP
+
+.SH "SEE ALSO"
+.BR bcalm (1)
+.br
+The programs are documented fully by the Genscale Team
+available at https://github.com/GATB/bcalm
+
+.SH AUTHORS
+This manual page was written by Pierre Vignet <pierre.vignet.contact@caramail.fr>
+for the Debian project (and may be used by others).
